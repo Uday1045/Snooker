@@ -1,8 +1,8 @@
 // src/components/PlayerNameForm.jsx
-export default function PlayerNameForm({ playerNames, setPlayerNames }) {
+export default function PlayerNameForm({ playerNames, setPlayerNames, onSubmitPlayers }) {
   const handleChange = (index, value) => {
     const updated = [...playerNames];
-    updated[index] = value ;
+    updated[index] = value;
     setPlayerNames(updated);
   };
 
@@ -21,6 +21,13 @@ export default function PlayerNameForm({ playerNames, setPlayerNames }) {
           />
         </div>
       ))}
+
+      <button
+        onClick={onSubmitPlayers}
+        className="mt-4 bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded w-full"
+      >
+        Submit Names
+      </button>
     </div>
   );
 }

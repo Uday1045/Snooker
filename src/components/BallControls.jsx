@@ -6,32 +6,37 @@ export default function BallControls({
   onPot,
   expectingColor,
   redsRemaining,
-  colorsPhase,
+  colorsPhase,         // must stay false until the free colour is taken
   colorSequenceIndex,
 }) {
   const balls = [
-    { name: "Red", points: 1, color: "bg-red-600" },
-    { name: "Yellow", points: 2, color: "bg-yellow-400" },
-    { name: "Green", points: 3, color: "bg-green-500" },
-    { name: "Brown", points: 4, color: "bg-amber-800" },
-    { name: "Blue", points: 5, color: "bg-blue-600" },
-    { name: "Pink", points: 6, color: "bg-pink-400" },
-    { name: "Black", points: 7, color: "bg-black" },
+    { name: "Red",    points: 1, color: "bg-red-600"   },
+    { name: "Yellow", points: 2, color: "bg-yellow-400"},
+    { name: "Green",  points: 3, color: "bg-green-500" },
+    { name: "Brown",  points: 4, color: "bg-amber-800" },
+    { name: "Blue",   points: 5, color: "bg-blue-600"  },
+    { name: "Pink",   points: 6, color: "bg-pink-400"  },
+    { name: "Black",  points: 7, color: "bg-black"     },
   ];
+
+  // true only in the single–shot window right after the last red
+  const freeColourAllowed = !colorsPhase && redsRemaining === 0;
 
   return (
     <div className="grid grid-cols-4 gap-2 p-4">
       {balls.map((ball) => {
         const isRed = ball.name === "Red";
+        let disabled;
 
-        let disabled = false;
-
-        if (colorsPhase) {
+        if (freeColourAllowed) {
+          // Last red has gone, but we haven’t started the sequence yet
+          disabled = isRed;                 // reds disabled, all colours enabled
+        } else if (colorsPhase) {
+          // Fixed sequence (yellow → … → black)
           disabled = ball.name !== colorSequence[colorSequenceIndex];
         } else {
-          disabled = isRed
-            ? expectingColor || redsRemaining === 0
-            : !expectingColor || redsRemaining === 0;
+          // Normal reds-and-colours alternation
+          disabled = isRed ? expectingColor : !expectingColor;
         }
 
         return (

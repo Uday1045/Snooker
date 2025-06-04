@@ -1,15 +1,10 @@
 // components/HomePage.jsx
 import { useState } from 'react';
 
-export default function HomePage({ onStartGame }) {
-  const [selectedMode, setSelectedMode] = useState(null);
-
+export default function HomePage({ onModeSelect }) {  // Make sure to receive onModeSelect as prop
   const handleModeSelect = (mode) => {
-    if (mode === 'multiplayer') {
-      onStartGame();
-    } else {
-      alert('Tournament mode coming soon!');
-    }
+    console.log("Mode selected:", mode); // For debugging
+    onModeSelect(mode); // Call the parent function
   };
 
   return (
@@ -26,6 +21,13 @@ export default function HomePage({ onStartGame }) {
       left: 0,
     }}
   >
+   <button
+  onClick={() => handleModeSelect("admin")}
+  className="bg-red-700 hover:bg-red-600 text-white px-4 py-2 rounded absolute top-6 right-6"
+>
+  Admin Dashboard
+</button>
+
       
       <div className="text-center mb-12">
         <h1 className="text-8xl font-bold text-white mb-2">
