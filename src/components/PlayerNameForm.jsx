@@ -1,4 +1,3 @@
-// src/components/PlayerNameForm.jsx
 export default function PlayerNameForm({ playerNames, setPlayerNames, onSubmitPlayers }) {
   const handleChange = (index, value) => {
     const updated = [...playerNames];

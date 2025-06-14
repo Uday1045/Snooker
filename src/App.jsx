@@ -9,6 +9,7 @@ import FrameStats from "./components/FrameStats";
 import PlayerNameForm from "./components/PlayerNameForm";
 import FoulControls from "./components/FoulsControls";
 import AdminDashboard from "./components/AdminDashboard";
+import GameHistory from "./components/GameHistory";
 
 export default function App() {
   const [mode, setMode] = useState("home");
@@ -18,7 +19,6 @@ export default function App() {
   const [semifinalMatches, setSemifinalMatches] = useState([]);
   const [finalMatch, setFinalMatch] = useState(null);
 
-  // Frame / game state
   const [scores, setScores] = useState([0, 0]);
   const [currentPlayer, setCurrentPlayer] = useState(0);
   const [redsRemaining, setRedsRemaining] = useState(15);
@@ -26,39 +26,32 @@ export default function App() {
   const [colorsPhase, setColorsPhase] = useState(false);
   const [colorSequenceIndex, setColorSequenceIndex] = useState(0);
   const [playerNames, setPlayerNames] = useState(["Player 1", "Player 2"]);
-  const [playerIds, setPlayerIds] = useState([null, null]);  // <-- Track player IDs from backend
+  const [playerIds, setPlayerIds] = useState([null, null]);
   const [showFrameDialog, setShowFrameDialog] = useState(false);
-  const [history, setHistory] = useState([]);
-
+  const [history, setHistory] = useState([]); // For undo
+const [potHistory, setPotHistory] = useState([[], []]);
   const colorSequence = ["Yellow", "Green", "Brown", "Blue", "Pink", "Black"];
-
-  // API base URL
   const API_BASE = "http://localhost:5000/api";
 
-  // Sync player names with backend - create players and get IDs
-
-   
   const handleSubmitPlayers = async () => {
-  try {
-    const responses = await Promise.all(
-      playerNames.map((name) =>
-        fetch(`${API_BASE}/players`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name }),
-        }).then((res) => res.json())
-      )
-    );
+    try {
+      const responses = await Promise.all(
+        playerNames.map((name) =>
+          fetch(`${API_BASE}/players`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name }),
+          }).then((res) => res.json())
+        )
+      );
 
-    const ids = responses.map((player) => player._id);
-    setPlayerIds(ids);
-  } catch (error) {
-    console.error("Error submitting player names:", error);
-  }
-};
+      const ids = responses.map((player) => player._id);
+      setPlayerIds(ids);
+    } catch (error) {
+      console.error("Error submitting player names:", error);
+    }
+  };
 
-
-  // Undo helpers
   const addToHistory = () => {
     setHistory((prev) => [
       ...prev,
@@ -89,7 +82,6 @@ export default function App() {
     });
   };
 
-  // Mode handling
   const handleModeSelect = (selectedMode) => {
     setMode(selectedMode);
     if (selectedMode === "tournament") {
@@ -101,7 +93,6 @@ export default function App() {
     resetGame();
   };
 
-  // Save match data to backend
   const saveMatchToBackend = async (winnerPlayerIndex) => {
     if (!playerIds[0] || !playerIds[1]) {
       console.warn("Player IDs missing, cannot save match");
@@ -109,8 +100,6 @@ export default function App() {
     }
 
     const winnerId = playerIds[winnerPlayerIndex];
-
-    // Construct match data
     const matchData = {
       player1: playerIds[0],
       player2: playerIds[1],
@@ -118,7 +107,7 @@ export default function App() {
       player2Name: playerNames[1],
       winner: winnerId,
       scores,
-      frames: [], // You can add frame details if you want, or keep empty
+      frames: [],
     };
 
     try {
@@ -128,9 +117,8 @@ export default function App() {
         body: JSON.stringify(matchData),
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to save match");
-      }
+      if (!res.ok) throw new Error("Failed to save match");
+
       const data = await res.json();
       console.log("Match saved:", data);
     } catch (error) {
@@ -138,13 +126,11 @@ export default function App() {
     }
   };
 
-  // Frame completion handler with backend save
   const handleFrameComplete = () => {
     const winnerIndex = scores[0] > scores[1] ? 0 : 1;
-    const winner = playerNames[winnerIndex];
 
     if (mode === "tournament" && tournamentMatch?.onComplete) {
-      tournamentMatch.onComplete(winner);
+      tournamentMatch.onComplete(playerNames[winnerIndex]);
       setMode("tournament");
       setTournamentMatch(null);
       resetGame();
@@ -152,11 +138,9 @@ export default function App() {
       setShowFrameDialog(true);
     }
 
-    // Save match after frame completes
     saveMatchToBackend(winnerIndex);
   };
 
-  // Tournament match start
   const handleTournamentMatchStart = (player1, player2, onComplete) => {
     setPlayerNames([player1, player2]);
     setTournamentMatch({ onComplete });
@@ -164,13 +148,17 @@ export default function App() {
     setMode("tournament");
   };
 
-  // Game logic
   const addPoints = (points, ball) => {
-    addToHistory();
-    const updated = [...scores];
+  addToHistory();
+  const updated = [...scores];
     updated[currentPlayer] += points;
     setScores(updated);
-
+  setPotHistory((prev) => {
+    const updated = [...prev];
+    if (!updated[currentPlayer]) updated[currentPlayer] = [];
+    updated[currentPlayer] = [...updated[currentPlayer], ball];
+    return updated;
+  });
     if (!colorsPhase) {
       if (ball === "Red") {
         setRedsRemaining((prev) => {
@@ -201,11 +189,14 @@ export default function App() {
   const nextTurn = () => {
     addToHistory();
     setCurrentPlayer((prev) => (prev === 0 ? 1 : 0));
+            setExpectingColor(false);
+
+    
   };
 
   const handleNoPot = () => {
     addToHistory();
-    addPoints(0, "");
+    addPoints(0, "Miss");
     nextTurn();
   };
 
@@ -218,6 +209,7 @@ export default function App() {
     setColorSequenceIndex(0);
     setShowFrameDialog(false);
     setHistory([]);
+setPotHistory([[], []]);
   };
 
   const handleFoul = (points) => {
@@ -230,7 +222,6 @@ export default function App() {
     nextTurn();
   };
 
-  // Frame dialog
   const FrameCompletionDialog = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-green-800 p-6 rounded-lg text-white">
@@ -251,7 +242,6 @@ export default function App() {
     </div>
   );
 
-  // Render
   if (mode === "home") {
     return (
       <HomePage 
@@ -260,10 +250,6 @@ export default function App() {
       />
     );
   }
-
-
-
-
 
   if (mode === "tournament" && !tournamentMatch) {
     return (
@@ -281,12 +267,10 @@ export default function App() {
       />
     );
   }
-  if (mode === "admin") {
-  return <AdminDashboard   
-  onBackToHome={() => setMode("home")} 
-     />;
-}
 
+  if (mode === "admin") {
+    return <AdminDashboard onBackToHome={() => setMode("home")} />;
+  }
 
   return (
     <div
@@ -309,23 +293,24 @@ export default function App() {
               if (mode === "tournament") {
                 setTournamentMatch(null);
               }
-        
               setMode(mode === "tournament" ? "tournament" : "home");
             }}
             className="bg-green-800 px-4 py-2 rounded text-white hover:bg-green-700"
           >
             ← Back
           </button>
-          
-        
 
+          
 
           <Header />
-<PlayerNameForm
-  playerNames={playerNames}
-  setPlayerNames={setPlayerNames}
-  onSubmitPlayers={handleSubmitPlayers}
-/>          <Scoreboard scores={scores} playerNames={playerNames} />
+          <PlayerNameForm
+            playerNames={playerNames}
+            setPlayerNames={setPlayerNames}
+            onSubmitPlayers={handleSubmitPlayers}
+          />
+          <GameHistory history={potHistory} />
+          <Scoreboard scores={scores} playerNames={playerNames} />
+
           <BallControls
             onPot={addPoints}
             expectingColor={expectingColor}
@@ -333,12 +318,14 @@ export default function App() {
             colorsPhase={colorsPhase}
             colorSequenceIndex={colorSequenceIndex}
           />
+
           <ActionControls
             onReset={resetGame}
             onNoPot={handleNoPot}
             onNextTurn={nextTurn}
             onUndo={undo}
           />
+
           <FrameStats currentPlayer={currentPlayer} playerNames={playerNames} />
           <FoulControls onFoul={handleFoul} />
 
