@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import HomePage from "./components/HomePage";
 import TournamentPage from "./components/TournamentPage";
 import Header from "./components/Header";
-import Scoreboard from "./components/scoreboard";
+import Scoreboard from "./components/Scoreboard";
 import BallControls from "./components/BallControls";
 import ActionControls from "./components/ActionControls";
 import FrameStats from "./components/FrameStats";
