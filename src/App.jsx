@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import HomePage from "./components/HomePage";
 import TournamentPage from "./components/TournamentPage";
 import Header from "./components/Header";
-import Scoreboard from "./components/Scoreboard";
+import Scoreboard from "./components/scoreboard";
 import BallControls from "./components/BallControls";
 import ActionControls from "./components/ActionControls";
 import FrameStats from "./components/FrameStats";
@@ -10,11 +10,15 @@ import PlayerNameForm from "./components/PlayerNameForm";
 import FoulControls from "./components/FoulsControls";
 import AdminDashboard from "./components/AdminDashboard";
 import GameHistory from "./components/GameHistory";
+import MultiplayerPage from "./components/MultiplayerPage"; 
 
 export default function App() {
   const [mode, setMode] = useState("home");
   const [tournamentMatch, setTournamentMatch] = useState(null);
+  const [multiplayerMatch, setMultiplayerMatch] = useState(null);
   const [tournamentStage, setTournamentStage] = useState("setup");
+  const [multiplayerStage, setMultiplayerStage] = useState("setup");
+  const [multiplayerPlayers, setMultiplayerPlayers] = useState(["", ""]);
   const [tournamentPlayers, setTournamentPlayers] = useState(["", "", "", ""]);
   const [semifinalMatches, setSemifinalMatches] = useState([]);
   const [finalMatch, setFinalMatch] = useState(null);
@@ -90,8 +94,13 @@ const [potHistory, setPotHistory] = useState([[], []]);
       setSemifinalMatches([]);
       setFinalMatch(null);
     }
+    if (selectedMode === "multiplayer") {
+      setMultiplayerStage("setup");
+      setMultiplayerPlayers(["", ""]);
+    }
     resetGame();
   };
+  
 
   const saveMatchToBackend = async (winnerPlayerIndex) => {
     if (!playerIds[0] || !playerIds[1]) {
@@ -147,6 +156,13 @@ const [potHistory, setPotHistory] = useState([[], []]);
     resetGame();
     setMode("tournament");
   };
+  const handleMultiplayerMatchStart = (player1, player2, onComplete) => {
+    setPlayerNames([player1, player2]);
+    setMultiplayerMatch({ onComplete });
+    resetGame();
+    setMode("multiplayer");
+  };
+
 
   const addPoints = (points, ball) => {
   addToHistory();
@@ -267,6 +283,20 @@ setPotHistory([[], []]);
       />
     );
   }
+  if (mode === "multiplayer" && !multiplayerMatch) {
+    return (
+      <MultiplayerPage
+        onStartMatch={handleMultiplayerMatchStart}
+        onBackToHome={() => setMode("multiplayer")}
+        multiplayerStage={multiplayerStage}
+        setMultiplayerStage={setMultiplayerStage}
+        players={multiplayerPlayers}
+        setPlayers={setMultiplayerPlayers}
+    matchScores={scores}
+    setMatchScores={setScores}
+      />
+    );
+  }
 
   if (mode === "admin") {
     return <AdminDashboard onBackToHome={() => setMode("home")} />;
@@ -289,27 +319,31 @@ setPotHistory([[], []]);
       <div className="min-h-screen w-full bg-black bg-opacity-40">
         <div className="max-w-3xl mx-auto space-y-6 p-4">
           <button
-            onClick={() => {
-              if (mode === "tournament") {
-                setTournamentMatch(null);
-              }
-              setMode(mode === "tournament" ? "tournament" : "home");
-            }}
-            className="bg-green-800 px-4 py-2 rounded text-white hover:bg-green-700"
-          >
-            ← Back
-          </button>
+  onClick={() => {
+    if (mode === "tournament") {
+      setTournamentMatch(null);
+    } else if (mode === "multiplayer") {
+      setMultiplayerStage("setup");
+    }
+    setMode("home");
+  }}
+  className="bg-green-800 px-4 py-2 rounded text-white hover:bg-green-700"
+>
+  ← Back
+</button>
+
+          
 
           
 
           <Header />
-          <PlayerNameForm
-            playerNames={playerNames}
-            setPlayerNames={setPlayerNames}
-            onSubmitPlayers={handleSubmitPlayers}
-          />
+          
           <GameHistory history={potHistory} />
-          <Scoreboard scores={scores} playerNames={playerNames} />
+<Scoreboard
+  playerNames={mode === 'multiplayer' ? multiplayerPlayers : tournamentPlayers}
+  scores={scores}
+/>
+
 
           <BallControls
             onPot={addPoints}
