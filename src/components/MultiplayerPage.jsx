@@ -7,12 +7,17 @@ export default function MultiplayerPage({
   setMatchScores,
   multiplayerStage,
   setmultiplayerStage,
+  handleMatchTypeChange,
+    selectedMatchType, // ✅ Required
+
 }) {
   const handlePlayerNameChange = (index, value) => {
     const newPlayers = [...players];
     newPlayers[index] = value;
     setPlayers(newPlayers);
   };
+ 
+
 
   const handleStartMatch = () => {
     // Validate players
@@ -44,17 +49,42 @@ export default function MultiplayerPage({
             <h1 className="text-3xl font-bold text-white">Multiplayer Match</h1>
           </div>
 
-          <div className="space-y-4">
-            {players.map((player, index) => (
-              <input
-                key={index}
-                type="text"
-                value={player}
-                onChange={(e) => handlePlayerNameChange(index, e.target.value)}
-                placeholder={`Player ${index + 1} Name`}
-                className="w-full p-2 rounded bg-white text-black"
-              />
-            ))}
+           <div className="space-y-4">
+              {players.map((player, index) => (
+                <div key={index} className="flex items-center gap-4">
+                  <span className="w-8 h-8 bg-green-700 rounded-full flex items-center justify-center text-white">
+                    {index + 1}
+                  </span>
+                  <input
+                    type="text"
+                    value={player}
+                    onChange={(e) => handlePlayerNameChange(index, e.target.value)}
+                    placeholder={`Player ${index + 1}`}
+                    className="flex-1 px-4 py-2 rounded bg-green-700 text-white placeholder-green-300 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  />
+                </div>
+                
+              ))}
+    
+  <h3 className="text-white text-lg font-semibold mb-2">Select Frame Type:</h3>
+  <div className="flex gap-4">
+    {[15, 10, 6].map((num) => (
+      <button
+        key={num}
+        onClick={() => handleMatchTypeChange(num)}
+        className={`font-medium px-4 py-2 rounded border-2 transition duration-200 ${
+  selectedMatchType === num
+    ? "bg-yellow-500 text-black border-yellow-700"
+    : "bg-green-800 text-white hover:bg-green-700 border-green-600"
+}`}
+      >
+        {num} Reds
+      </button>
+    ))}
+  </div>
+
+
+
 
             <button
               onClick={handleStartMatch}

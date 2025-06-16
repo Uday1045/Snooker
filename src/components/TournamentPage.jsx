@@ -9,7 +9,9 @@ export default function TournamentPage({
   semifinalMatches,
   setSemifinalMatches,
   finalMatch,
-  setFinalMatch
+  setFinalMatch,
+   handleMatchTypeChange,
+    selectedMatchType, 
 }) {
   const handlePlayerNameChange = (index, value) => {
     const newPlayers = [...players];
@@ -79,8 +81,28 @@ export default function TournamentPage({
                     className="flex-1 px-4 py-2 rounded bg-green-700 text-white placeholder-green-300 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
                 </div>
+                
               ))}
-            </div>
+             
+  <h3 className="text-white text-lg font-semibold mb-2">Select Frame Type:</h3>
+  <div className="flex gap-4">
+    {[15, 10, 6].map((num) => (
+      <button
+        key={num}
+        onClick={() => handleMatchTypeChange(num)}
+        className={`font-medium px-4 py-2 rounded border-2 transition duration-200 ${
+  selectedMatchType === num
+    ? "bg-yellow-500 text-black border-yellow-700"
+    : "bg-green-800 text-white hover:bg-green-700 border-green-600"
+}`}
+      >
+        {num} Reds
+      </button>
+    ))}
+  
+</div>
+   </div>
+             
 
             <button
               onClick={handleStartTournament}

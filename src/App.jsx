@@ -26,6 +26,7 @@ export default function App() {
   const [scores, setScores] = useState([0, 0]);
   const [currentPlayer, setCurrentPlayer] = useState(0);
   const [redsRemaining, setRedsRemaining] = useState(15);
+  const [selectedMatchType, setSelectedMatchType] = useState(null);
   const [expectingColor, setExpectingColor] = useState(false);
   const [colorsPhase, setColorsPhase] = useState(false);
   const [colorSequenceIndex, setColorSequenceIndex] = useState(0);
@@ -66,6 +67,7 @@ const [potHistory, setPotHistory] = useState([[], []]);
         expectingColor,
         colorsPhase,
         colorSequenceIndex,
+        potHistory,
       },
     ]);
   };
@@ -81,6 +83,8 @@ const [potHistory, setPotHistory] = useState([[], []]);
       setExpectingColor(last.expectingColor);
       setColorsPhase(last.colorsPhase);
       setColorSequenceIndex(last.colorSequenceIndex);
+      setPotHistory(last.potHistory);
+
 
       return prev.slice(0, prev.length - 1);
     });
@@ -205,21 +209,22 @@ const [potHistory, setPotHistory] = useState([[], []]);
   const nextTurn = () => {
     addToHistory();
     setCurrentPlayer((prev) => (prev === 0 ? 1 : 0));
-            setExpectingColor(false);
-
-    
+    setExpectingColor(false);
   };
 
   const handleNoPot = () => {
     addToHistory();
     addPoints(0, "Miss");
+  
     nextTurn();
   };
+
+  
 
   const resetGame = () => {
     setScores([0, 0]);
     setCurrentPlayer(0);
-    setRedsRemaining(15);
+    setRedsRemaining(selectedMatchType);
     setExpectingColor(false);
     setColorsPhase(false);
     setColorSequenceIndex(0);
@@ -227,6 +232,12 @@ const [potHistory, setPotHistory] = useState([[], []]);
     setHistory([]);
 setPotHistory([[], []]);
   };
+  const handleMatchTypeChange = (numReds) => {
+  setRedsRemaining(numReds);
+    setSelectedMatchType(numReds);
+
+
+};
 
   const handleFoul = (points) => {
     addToHistory();
@@ -234,8 +245,12 @@ setPotHistory([[], []]);
     const opponent = currentPlayer === 0 ? 1 : 0;
     updated[opponent] += points;
     setScores(updated);
+     
+
     setExpectingColor(false);
+
     nextTurn();
+    
   };
 
   const FrameCompletionDialog = () => (
@@ -280,6 +295,10 @@ setPotHistory([[], []]);
         setSemifinalMatches={setSemifinalMatches}
         finalMatch={finalMatch}
         setFinalMatch={setFinalMatch}
+         handleMatchTypeChange={handleMatchTypeChange}
+     selectedMatchType={selectedMatchType} // ✅ Add this
+  setSelectedMatchType={setSelectedMatchType} // ✅ Add this if needed
+        
       />
     );
   }
@@ -287,13 +306,17 @@ setPotHistory([[], []]);
     return (
       <MultiplayerPage
         onStartMatch={handleMultiplayerMatchStart}
-        onBackToHome={() => setMode("multiplayer")}
+        onBackToHome={() => setMode("home")}
+
         multiplayerStage={multiplayerStage}
         setMultiplayerStage={setMultiplayerStage}
         players={multiplayerPlayers}
         setPlayers={setMultiplayerPlayers}
     matchScores={scores}
     setMatchScores={setScores}
+     handleMatchTypeChange={handleMatchTypeChange}
+     selectedMatchType={selectedMatchType} // ✅ Add this
+  setSelectedMatchType={setSelectedMatchType} // ✅ Add this if needed
       />
     );
   }
@@ -338,7 +361,10 @@ setPotHistory([[], []]);
 
           <Header />
           
-          <GameHistory history={potHistory} />
+          <GameHistory 
+          history={potHistory} 
+          playerNames={mode === 'multiplayer' ? multiplayerPlayers : tournamentPlayers}
+          />
 <Scoreboard
   playerNames={mode === 'multiplayer' ? multiplayerPlayers : tournamentPlayers}
   scores={scores}
@@ -360,7 +386,10 @@ setPotHistory([[], []]);
             onUndo={undo}
           />
 
-          <FrameStats currentPlayer={currentPlayer} playerNames={playerNames} />
+          <FrameStats
+            currentPlayer={currentPlayer}
+            playerNames={mode === 'multiplayer' ? multiplayerPlayers : tournamentPlayers}
+          />
           <FoulControls onFoul={handleFoul} />
 
           {showFrameDialog && <FrameCompletionDialog />}
